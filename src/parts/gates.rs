@@ -2,6 +2,7 @@
 use std::rc::Rc;
 use std::cell::Cell;
 
+#[derive(Debug)]
 pub enum Gate {
     Input(Rc<Cell<bool>>),
     Not(Rc<Gate>),
@@ -10,6 +11,10 @@ pub enum Gate {
 }
 
 impl Gate {
+
+    pub fn constant(state: bool) -> Gate {
+        Gate::Input(Rc::new(Cell::new(state)))
+    }
     
     pub fn input(state: Rc<Cell<bool>>) -> Gate {
         Gate::Input(state)
@@ -36,10 +41,17 @@ impl Gate {
     }
 
     pub fn xor(state1: Rc<Gate>, state2: Rc<Gate>) -> Gate {
-
+        Gate::Or(
+            Rc::new(Gate::And(
+                Rc::new(Gate::Not(state1.clone())),
+                state2.clone()
+            )),
+            Rc::new(Gate::And(
+                state1.clone(),
+                Rc::new(Gate::Not(state2.clone()))
+            ))
+        )
     }
-
-
 
     pub fn eval(&self) -> bool {
 

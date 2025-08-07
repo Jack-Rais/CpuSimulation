@@ -6,37 +6,44 @@ mod parts {
 }
 
 use std::rc::Rc;
-use std::cell::Cell;
 
-use parts::gates::{Gate};
-
+use crate::parts::objects::UnsignedInteger8;
+use crate::parts::operations::Ops;
 
 fn main() {
     
-    let poss = [
-        ( true, true ),
-        ( true, false ),
-        ( false, true ),
-        ( false, false )
-    ];
+    let x = Rc::new(UnsignedInteger8::from_bits([
+        false,
+        false,
+        true,
+        false,
+        false,
+        true,
+        true,
+        false,
+    ]));
 
-    let input1 = Rc::new(Cell::new(true));
-    let input2 = Rc::new(Cell::new(true));
+    let y = Rc::new(UnsignedInteger8::from_bits([
+        false,
+        true,
+        false,
+        true,
+        false,
+        true,
+        true,
+        true,
+    ]));
 
-    let gate = Gate::and(
-        Rc::new(Gate::input(input1.clone())),
-        Rc::new(Gate::input(input2.clone()))
+    
+    println!("{} + {}", x.to_dec(), y.to_dec());
+    
+    let u = Ops::adder_8bit(
+        &x,
+        &y
     );
 
-
-    for &(x, y) in poss.iter() {
-        input1.set(x);
-        input2.set(y);
-
-        println!("x: {}, y: {} -> {}", x, y, gate.eval());
+    if let Ops::Adder8Bit(sum, over) = &u {
+        println!("{}, {}", sum.to_dec(), over.eval());
     }
-
-    // println!("{}", gate);
-    // println!("{}", gate.eval());
 
 }
