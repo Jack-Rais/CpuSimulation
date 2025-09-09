@@ -19,6 +19,10 @@ impl Gate {
     pub fn input(state: Rc<Cell<bool>>) -> Gate {
         Gate::Input(state)
     }
+
+    pub fn input_empty(state: bool) -> Gate {
+        Gate::Input(Rc::new(Cell::new(state)))
+    }
     
     pub fn not(state: Rc<Gate>) -> Gate {
         Gate::Not(state)

@@ -1,35 +1,40 @@
 
-use std::cell::Cell;
 use std::rc::Rc;
 
-use super::objects::UnsignedInteger8;
-use super::gates::Gate;
+use crate::logic::gates::Gate;
 
 
-/// Carry-lookahead block, takes 4 generate signals and the carry input and the propagate signals
-/// and the carry input and returns carry out, propagate, generate
-pub fn carry_lookahead_4b_group(gens: [Rc<Gate>; 5], props: [Rc<Gate>; 5]) -> (Rc<Gate>, Rc<Gate>, Rc<Gate>) {
+/// Builder function for a full adder with Carry Lookahead
+///
+/// # Outputs: (out_sum, propagate, generate)
+pub fn full_adder_cl(state1: &Rc<Gate>, state2: &Rc<Gate>, carry: Rc<Gate>) -> (Rc<Gate>, Rc<Gate>, Rc<Gate>) {
     
-    let last_carry = gens.first().clone();
+    let prop = Rc::new(Gate::xor(state1.clone(), state2.clone()));
+    let gener = Rc::new(Gate::and(state1.clone(), state2.clone()));
 
+    let out = Rc::new(Gate::xor(prop.clone(), carry.clone()));
 
+    (out, prop, gener)
 
 }
 
 
-/// A 4bit version of a Ripple-carry adder that returns an (out, generate, propagate)
-pub fn adder_4bit_clgp(num1: [Rc<Gate>; 4], num2: [Rc<Gate>; 4], carry_in: Rc<Gate>) -> ([Rc<Gate>; 4], Rc<Gate>, Rc<Gate>) {
-    
-    let mut result = Vec::with_capacity(4);
-    let mut out_prop = Rc::new(Gate::Input(Rc::new(Cell::new(false))));
+/// Builder function for a 4 bit adder with Carry Lookahead
+///
+/// # Outputs: (4bit_sum, propagate, generate)
+/// To calculate directly the carry_out you can do ((carry_in AND propagate) OR generate)
+pub fn adder_4bit_cl(num1: [Rc<Gate>; 4], num2: [Rc<Gate>; 4], carry: Rc<Gate>) -> ([Rc<Gate>; 4], Rc<Gate>, Rc<Gate>) {
 
+    let mut result = Vec::with_capacity(4);
+    let mut prop_out = Rc::new(Gate::input_empty(false));
+    
     let mut geners = Vec::with_capacity(5);
     let mut props = Vec::with_capacity(5);
 
-    geners.push(carry_in.clone());
-    props.push(carry_in.clone());
+    geners.push(carry.clone());
+    props.push(carry.clone());
 
-    let mut past_carry = carry_in.clone();
+    let mut past_carry = carry.clone();
 
     for num_cl in 0..4 {
        
@@ -47,7 +52,7 @@ pub fn adder_4bit_clgp(num1: [Rc<Gate>; 4], num2: [Rc<Gate>; 4], carry_in: Rc<Ga
         
         let mut curr_carry = Gate::empty_or(); // The Or gate that feeds into the next carry
 
-        // Create the row of ANDs 
+        // Create the row of ANDs
         for num_and in 0..num_cl+1 {
             
             let mut curr_and = Gate::empty_and();
@@ -62,11 +67,12 @@ pub fn adder_4bit_clgp(num1: [Rc<Gate>; 4], num2: [Rc<Gate>; 4], carry_in: Rc<Ga
 
             let props_len = props.len();
             for num_past_propagate in 0..num_and {
-               curr_and = curr_and.apply(props[props_len - num_past_propagate - 1].clone());
+                curr_and = curr_and.apply(props[props_len - num_past_propagate - 1].clone());
             }
-
-            if num_and == num_cl && num_cl == 3 {
-                out_prop = Rc::new(curr_and);
+            
+            // The last or gate that feeds into the last and gate is the propagate signal
+            if num_and == 3 {
+                prop_out = Rc::new(curr_and);
             }
             else {
                 curr_carry = curr_carry.apply(Rc::new(curr_and));
@@ -77,22 +83,17 @@ pub fn adder_4bit_clgp(num1: [Rc<Gate>; 4], num2: [Rc<Gate>; 4], carry_in: Rc<Ga
         past_carry = Rc::new(curr_carry);
 
     }
-
+    
     // Reverse the result to take the MSB to the left
     result.reverse();
 
     (
         result.try_into().expect("A 4 bit vector was not of 4 bits"),
-        out_prop,
+        prop_out,
         past_carry
     )
 
 }
 
-// Carry-lookahead adder
-// Crates an 8 bit adder with carry-lookahead and returns (sum: UnsignedInteger8, carry: Gate)
-// pub fn adder_8bit_cl(num1: &rc<unsignedinteger8>, num2: &rc<unsignedinteger8>) -> (rc<unsignedinteger8>, rc<gate>) {
-//     
-//             
-//
-// }
+
+

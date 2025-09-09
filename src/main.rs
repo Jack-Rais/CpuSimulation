@@ -1,18 +1,11 @@
 
-mod logic {
-    pub mod objects;
-    pub mod operations;
-    pub mod gates;
-}
-
-mod cpu {
-    pub mod alu;
-}
+pub mod logic;
+mod cpu;
 
 use std::{cell::Cell, rc::Rc};
 
 use crate::logic::gates::Gate;
-use crate::logic::operations::adder_4bit_cl;
+use crate::logic::operations::adder_4bit_clgp;
 
 
 
@@ -45,8 +38,8 @@ fn bit4_intou8(inp: [Rc<Gate>; 4]) -> u8 {
 
 fn main() {
     
-    let num1 = 9;
-    let num2 = 7;
+    let num1 = 15;
+    let num2 = 1;
 
     let n1 = to_rc(to_arr(num1));
     let n2 = to_rc(to_arr(num2));
@@ -54,8 +47,8 @@ fn main() {
     println!("{:?}", n1.clone().map(|x| x.eval()));
     println!("{:?}", n2.clone().map(|x| x.eval()));
 
-    let res = adder_4bit_cl(n1, n2, Rc::new(Gate::Input(Rc::new(Cell::new(false)))));
+    let res = adder_4bit_clgp(n1, n2, Rc::new(Gate::Input(Rc::new(Cell::new(true)))));
     
-    println!("{:?} - {}", bit4_intou8(res.0), res.1.eval());
+    println!("{:?} - {} - {}", bit4_intou8(res.0), res.1.eval(), res.2.eval());
 
 }
