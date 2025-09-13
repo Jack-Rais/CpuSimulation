@@ -2,10 +2,14 @@
 use std::rc::Rc;
 use std::cell::Cell;
 
+use crate::logic::gates::GateRef;
+
+
 pub trait Gate {
     fn eval(&self) -> bool;
-    fn apply(&mut self, state: Rc<dyn Gate>);
+    fn apply(&mut self, state: GateRef);
 }
+
 
 
 pub struct Input {
@@ -23,7 +27,7 @@ impl Gate for Input {
         self.inp.get()
     }
 
-    fn apply(&mut self, _state: Rc<dyn Gate>) {
+    fn apply(&mut self, _state: GateRef) {
         panic!("Value not changeable for an Input type");
     }
 
@@ -31,10 +35,10 @@ impl Gate for Input {
 
 
 pub struct Not {
-    inp: Rc<dyn Gate>
+    inp: GateRef
 }
 impl Not {
-    pub fn new(state: Rc<dyn Gate>) -> Self {
+    pub fn new(state: GateRef) -> Self {
         Not { inp: state }
     }
 }
@@ -44,7 +48,7 @@ impl Gate for Not {
         !self.inp.eval()
     }
 
-    fn apply(&mut self, state: Rc<dyn Gate>) {
+    fn apply(&mut self, state: GateRef) {
         self.inp = state;
     }
 
@@ -52,10 +56,10 @@ impl Gate for Not {
 
 
 pub struct And {
-    inps: Vec<Rc<dyn Gate>>
+    inps: Vec<GateRef>
 }
 impl And {
-    pub fn new(state: Vec<Rc<dyn Gate>>) -> Self {
+    pub fn new(state: Vec<GateRef>) -> Self {
         Self { inps: state }
     }
 }
@@ -69,7 +73,7 @@ impl Gate for And {
         true
     }
 
-    fn apply(&mut self, state: Rc<dyn Gate>) {
+    fn apply(&mut self, state: GateRef) {
         self.inps.push(state);
     }
 
@@ -77,10 +81,10 @@ impl Gate for And {
 
 
 pub struct Or {
-    inps: Vec<Rc<dyn Gate>>
+    inps: Vec<GateRef>
 }
 impl Or {
-    pub fn new(state: Vec<Rc<dyn Gate>>) -> Self {
+    pub fn new(state: Vec<GateRef>) -> Self {
         Self { inps: state }
     }
 }
@@ -94,7 +98,7 @@ impl Gate for Or {
         false
     }
 
-    fn apply(&mut self, state: Rc<dyn Gate>) {
+    fn apply(&mut self, state: GateRef) {
         self.inps.push(state);
     }
 

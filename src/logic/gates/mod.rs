@@ -1,10 +1,13 @@
 
 pub mod implement;
 
-use implement::{Gate, Input, Not, And, Or};
+pub use implement::Gate;
+use implement::{Input, Not, And, Or};
 
 use std::{cell::Cell, rc::Rc};
 
+
+pub type GateRef = Rc<dyn Gate>;
 
 
 /// Builder function for a static Input
@@ -14,55 +17,55 @@ pub fn constant(state: bool) -> Input {
 
 
 /// Builder function for a dynamic Input
-pub fn input(state: Rc<Cell<bool>>) -> Input {
+pub fn input(state: Rc<Cell<bool>>) -> impl Gate {
     Input::new(state)
 }
 
 
 /// Builder function for a Not gate
-pub fn not(state: Rc<dyn Gate>) -> Not {
+pub fn not(state: GateRef) -> impl Gate {
     Not::new(state)
 }
 
 
 /// Builder function for an And gate
-pub fn and(state1: Rc<dyn Gate>, state2: Rc<dyn Gate>) -> And {
+pub fn and(state1: GateRef, state2: GateRef) -> impl Gate {
     
-    let mut inps = Vec::with_capacity(2);
-
-    inps.push(state1);
-    inps.push(state2);
+    let inps = vec![
+        state1,
+        state2
+    ];
 
     And::new(inps)
 }
 
 
 /// Builder function for an empty And gate
-pub fn empty_and() -> And {
+pub fn empty_and() -> impl Gate {
     And::new(Vec::new())
 }
 
 
 /// Builder function for an Or gate
-pub fn or(state1: Rc<dyn Gate>, state2: Rc<dyn Gate>) -> Or {
+pub fn or(state1: GateRef, state2: GateRef) -> impl Gate {
 
-    let mut inps = Vec::with_capacity(2);
-
-    inps.push(state1);
-    inps.push(state2);
+    let inps = vec![
+        state1,
+        state2
+    ];
 
     Or::new(inps)
 }
 
 
 /// Builder function for an empty Or gate
-pub fn empty_or() -> Or {
+pub fn empty_or() -> impl Gate {
     Or::new(Vec::new())
 }
 
 
 /// Builder function for a Nand gate
-pub fn nand(state1: Rc<dyn Gate>, state2: Rc<dyn Gate>) -> Not {
+pub fn nand(state1: GateRef, state2: GateRef) -> impl Gate {
     Not::new(
         Rc::new(and(state1, state2))
     )
@@ -70,13 +73,16 @@ pub fn nand(state1: Rc<dyn Gate>, state2: Rc<dyn Gate>) -> Not {
 
 
 /// Builder function for a Xor gate
-pub fn xor(state1: Rc<dyn Gate>, state2: Rc<dyn Gate>) -> Or {
+pub fn xor(state1: GateRef, state2: GateRef) -> impl Gate {
     
     or(
-        Rc::new(and(state1.clone(), state2.clone())),
         Rc::new(and(
             Rc::new(not(state1.clone())),
-            Rc::new(not(state2.clone()))
+            state2.clone()
+        )),
+        Rc::new(and(
+            state1,
+            Rc::new(not(state2))
         ))
     )
 
