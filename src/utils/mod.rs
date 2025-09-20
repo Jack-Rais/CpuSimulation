@@ -10,7 +10,7 @@ pub fn u8_to_4bit(num: u8) -> [Rc<dyn Gate>; 4] {
     if num > 15 { panic!("Number impossible to convert to a 4bit int") }
 
     let mut result = std::array::from_fn(|i| {
-        let x: Rc<dyn Gate> = Rc::new(constant((num & (1 << i)) != 0)); x
+        constant((num & (1 << i)) != 0)
     });
 
     result.reverse();

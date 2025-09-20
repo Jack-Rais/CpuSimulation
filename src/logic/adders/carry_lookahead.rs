@@ -2,25 +2,30 @@
 use std::rc::Rc;
 
 use crate::logic::gates::{and, empty_and, empty_or, xor, Gate, GateRef};
-use crate::logic::adders::types::{
-    CarryLookaheadUnitInputs,
-    CarryLookaheadUnitGPOutputs,
-    Adder4BitInputs,
-    Adder4BitGPOutputs,
+use crate::types::ripple::{
+    GeneralSingleCarryInputs,
+    General4BitCarryInputs
+};
+use crate::types::lookahead::{
+    GPSingleOutputs,
+    GP3BitOutputs,
+    GP4BitOutputs
 };
 
 
 /// Builder function for a full adder with Carry Lookahead
 ///
 /// # Outputs: (out_sum, propagate, generate)
-pub fn full_adder_cl(state1: GateRef, state2: GateRef, carry: GateRef) -> (GateRef, GateRef, GateRef) {
+pub fn full_adder_cl(inps: GeneralSingleCarryInputs) -> GPSingleOutputs {
     
-    let prop = Rc::new(xor(state1.clone(), state2.clone()));
-    let gener = Rc::new(and(state1, state2));
+    let GeneralSingleCarryInputs { state1, state2, carry_in } = inps;
+    let prop = xor(state1.clone(), state2.clone());
 
-    let out = Rc::new(xor(prop.clone(), carry));
-
-    (out, prop, gener)
+    GPSingleOutputs {
+        out: xor(prop.clone(), carry_in),
+        propagate: prop,
+        generate: and(state1, state2)
+    }
 
 }
 
@@ -29,9 +34,9 @@ pub fn full_adder_cl(state1: GateRef, state2: GateRef, carry: GateRef) -> (GateR
 ///
 /// # Inputs: (generates (with carry_in), propagates (with carry_in))
 /// # Outputs: (carry_outs, propagate, generate)
-pub fn carry_lookahead_unit(inps: CarryLookaheadUnitInputs) -> CarryLookaheadUnitGPOutputs {
+pub fn carry_lookahead_unit(inps: General4BitCarryInputs) -> GP3BitOutputs {
 
-    let CarryLookaheadUnitInputs { props, gens, carry_in } = inps;
+    let General4BitCarryInputs { inp1: props, inp2: gens, carry_in } = inps;
     
     let mut prop_out: Option<GateRef> = None;
     let mut gener_out: Option<GateRef> = None;
@@ -84,8 +89,8 @@ pub fn carry_lookahead_unit(inps: CarryLookaheadUnitInputs) -> CarryLookaheadUni
     }
 
 
-    CarryLookaheadUnitGPOutputs {
-        carry_outs: match result.try_into() { Ok(x) => x, _ => panic!("3 bit vector did not return 3 bits") },
+    GP3BitOutputs {
+        out: match result.try_into() { Ok(x) => x, _ => panic!("3 bit vector did not return 3 bits") },
         propagate: prop_out.expect("prop_out was never set"),
         generate: gener_out.expect("gen_out was never set"),
     }
@@ -98,33 +103,33 @@ pub fn carry_lookahead_unit(inps: CarryLookaheadUnitInputs) -> CarryLookaheadUni
 ///
 /// # Outputs: (4bit_sum, propagate, generate)
 /// To calculate directly the carry_out you can do ((carry_in AND propagate) OR generate)
-pub fn adder_4bit_cl(inps: Adder4BitInputs) -> Adder4BitGPOutputs {
+pub fn adder_4bit_cl(inps: General4BitCarryInputs) -> GP4BitOutputs {
 
-    let Adder4BitInputs { num1, num2, carry_in } = inps;
+    let General4BitCarryInputs { inp1: num1, inp2: num2, carry_in } = inps;
 
 
     let gens: [GateRef; 4] = std::array::from_fn(|idx| {
-        let x: GateRef = Rc::new(and(num1[3 - idx].clone(), num2[3 - idx].clone())); x
+        and(num1[3 - idx].clone(), num2[3 - idx].clone())
     });
 
     let props: [GateRef; 4] = std::array::from_fn(|idx| {
-        let x: GateRef = Rc::new(xor(num1[3 - idx].clone(), num2[3 - idx].clone())); x
+        xor(num1[3 - idx].clone(), num2[3 - idx].clone())
     });
 
-    let CarryLookaheadUnitGPOutputs {carry_outs, propagate, generate} = carry_lookahead_unit(CarryLookaheadUnitInputs {
-        props: &props,
-        gens: &gens,
+    let GP3BitOutputs { out, propagate, generate } = carry_lookahead_unit(General4BitCarryInputs {
+        inp1: &props,
+        inp2: &gens,
         carry_in: carry_in.clone()
     });
 
     let mut result: [GateRef; 4] = std::array::from_fn(|idx| {
-        if idx == 0 { let x: GateRef = Rc::new(xor(props[idx].clone(), carry_in.clone())); return x; }
-        let x: GateRef = Rc::new(xor(props[idx].clone(), carry_outs[idx - 1].clone())); x
+        if idx == 0 { return xor(props[idx].clone(), carry_in.clone()) }
+        xor(props[idx].clone(), out[idx - 1].clone())
     });
     result.reverse();
     
-    Adder4BitGPOutputs {
-        sum: result,
+    GP4BitOutputs {
+        out: result,
         propagate,
         generate
     }

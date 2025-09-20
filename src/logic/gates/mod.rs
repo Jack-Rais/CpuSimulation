@@ -10,9 +10,13 @@ use std::{cell::Cell, rc::Rc};
 pub type GateRef = Rc<dyn Gate>;
 
 
-/// Builder function for a static Input
-pub fn constant(state: bool) -> Input {
+pub fn constant_naked(state: bool) -> Input {
     Input::new(Rc::new(Cell::new(state)))
+}
+
+/// Builder function for a static Input
+pub fn constant(state: bool) -> GateRef {
+    Rc::new(constant_naked(state))
 }
 
 
@@ -21,22 +25,21 @@ pub fn input(state: Rc<Cell<bool>>) -> impl Gate {
     Input::new(state)
 }
 
-
 /// Builder function for a Not gate
-pub fn not(state: GateRef) -> impl Gate {
-    Not::new(state)
+pub fn not(state: GateRef) -> GateRef {
+    Rc::new(Not::new(state))
 }
 
 
 /// Builder function for an And gate
-pub fn and(state1: GateRef, state2: GateRef) -> impl Gate {
+pub fn and(state1: GateRef, state2: GateRef) -> GateRef {
     
     let inps = vec![
         state1,
         state2
     ];
 
-    And::new(inps)
+    Rc::new(And::new(inps))
 }
 
 
@@ -47,14 +50,14 @@ pub fn empty_and() -> impl Gate {
 
 
 /// Builder function for an Or gate
-pub fn or(state1: GateRef, state2: GateRef) -> impl Gate {
+pub fn or(state1: GateRef, state2: GateRef) -> GateRef {
 
     let inps = vec![
         state1,
         state2
     ];
 
-    Or::new(inps)
+    Rc::new(Or::new(inps))
 }
 
 
@@ -65,25 +68,25 @@ pub fn empty_or() -> impl Gate {
 
 
 /// Builder function for a Nand gate
-pub fn nand(state1: GateRef, state2: GateRef) -> impl Gate {
-    Not::new(
-        Rc::new(and(state1, state2))
-    )
+pub fn nand(state1: GateRef, state2: GateRef) -> GateRef {
+    Rc::new(Not::new(
+        and(state1, state2)
+    ))
 }
 
 
 /// Builder function for a Xor gate
-pub fn xor(state1: GateRef, state2: GateRef) -> impl Gate {
+pub fn xor(state1: GateRef, state2: GateRef) -> GateRef {
     
     or(
-        Rc::new(and(
-            Rc::new(not(state1.clone())),
+        and(
+            not(state1.clone()),
             state2.clone()
-        )),
-        Rc::new(and(
+        ),
+        and(
             state1,
-            Rc::new(not(state2))
-        ))
+            not(state2)
+        )
     )
 
 }

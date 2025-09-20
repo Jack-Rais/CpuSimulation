@@ -7,9 +7,8 @@ use crate::logic::gates::GateRef;
 
 pub trait Gate {
     fn eval(&self) -> bool;
-    fn apply(&mut self, state: GateRef);
+    fn apply(&mut self, state: Rc<dyn Gate>);
 }
-
 
 
 pub struct Input {
@@ -27,7 +26,7 @@ impl Gate for Input {
         self.inp.get()
     }
 
-    fn apply(&mut self, _state: GateRef) {
+    fn apply(&mut self, _state: Rc<dyn Gate>) {
         panic!("Value not changeable for an Input type");
     }
 
@@ -47,8 +46,8 @@ impl Gate for Not {
     fn eval(&self) -> bool {
         !self.inp.eval()
     }
-
-    fn apply(&mut self, state: GateRef) {
+    
+    fn apply(&mut self, state: Rc<dyn Gate>) {
         self.inp = state;
     }
 
